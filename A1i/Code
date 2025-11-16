@@ -1,0 +1,122 @@
+#include <iostream>
+#include <random>
+#include <cmath>
+#include <vector>
+#include <numbers>
+
+struct Circle {
+  double x = 0;
+  double y = 0;
+  double r = 0;
+};
+
+bool IsInsideCircle(const Circle& circle, const double px, const double py) {
+  const double dx = px - circle.x;
+  const double dy = py - circle.y;
+  const double distanceSquared = dx * dx + dy * dy;
+  return distanceSquared <= circle.r * circle.r;
+}
+
+bool IsInsideIntersection(const std::vector<Circle>& circles, const double px, const double py) {
+  for (int i = 0; i < 3; ++i) {
+    if (!IsInsideCircle(circles[i], px, py)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+double MonteCarloEstimate(const std::vector<Circle>& circles, const int totalPoints, const double xmin,
+                          const double xmax, const double ymin, const double ymax, const unsigned seed) {
+  std::mt19937 generator(seed);
+  std::uniform_real_distribution distX(xmin, xmax);
+  std::uniform_real_distribution distY(ymin, ymax);
+
+  int insideCount = 0;
+
+  for (int i = 0; i < totalPoints; ++i) {
+    const double px = distX(generator);
+    const double py = distY(generator);
+
+    if (IsInsideIntersection(circles, px, py)) {
+      ++insideCount;
+    }
+  }
+
+  const double rectangleArea = (xmax - xmin) * (ymax - ymin);
+  const double ratio = static_cast<double>(insideCount) / static_cast<double>(totalPoints);
+
+  return ratio * rectangleArea;
+}
+
+void ComputeWideBox(const std::vector<Circle>& circles, double& xmin, double& xmax, double& ymin, double& ymax) {
+  xmin = circles[0].x - circles[0].r;
+  xmax = circles[0].x + circles[0].r;
+  ymin = circles[0].y - circles[0].r;
+  ymax = circles[0].y + circles[0].r;
+
+  for (int i = 1; i < 3; ++i) {
+    xmin = std::min(xmin, circles[i].x - circles[i].r);
+    xmax = std::max(xmax, circles[i].x + circles[i].r);
+    ymin = std::min(ymin, circles[i].y - circles[i].r);
+    ymax = std::max(ymax, circles[i].y + circles[i].r);
+  }
+}
+
+void ComputeNarrowBox(const std::vector<Circle>& circles, double& xmin, double& xmax, double& ymin, double& ymax) {
+  xmin = circles[0].x - circles[0].r;
+  xmax = circles[0].x + circles[0].r;
+  ymin = circles[0].y - circles[0].r;
+  ymax = circles[0].y + circles[0].r;
+
+  for (int i = 1; i < 3; ++i) {
+    xmin = std::max(xmin, circles[i].x - circles[i].r);
+    xmax = std::min(xmax, circles[i].x + circles[i].r);
+    ymin = std::max(ymin, circles[i].y - circles[i].r);
+    ymax = std::min(ymax, circles[i].y + circles[i].r);
+  }
+}
+
+double ExactArea() {
+  constexpr double part1 = 0.25 * std::numbers::pi;
+  constexpr double part2 = 1.25 * std::asin(0.8);
+  constexpr double result = part1 + part2 - 1.0;
+  return result;
+}
+
+int main() {
+  std::ios::sync_with_stdio(false);
+  std::cin.tie(nullptr);
+
+  std::vector<Circle> circles(3);
+  for (int i = 0; i < 3; ++i) {
+    std::cin >> circles[i].x >> circles[i].y >> circles[i].r;
+  }
+
+  constexpr int totalPoints = 100000;
+  constexpr unsigned seed = 42;
+  double xmin = 0;
+  double xmax = 0;
+  double ymin = 0;
+  double ymax = 0;
+  bool narrow = true;
+
+  std::cout.setf(std::ios::fixed);
+  std::cout.precision(10);
+
+  //std::cout << ExactArea() << '\n';
+
+  if (narrow) {
+    ComputeNarrowBox(circles, xmin, xmax, ymin, ymax);
+    const double narrowEstimate = MonteCarloEstimate(circles, totalPoints, xmin, xmax, ymin, ymax, seed);
+
+    std::cout << narrowEstimate;
+  } else {
+    ComputeWideBox(circles, xmin, xmax, ymin, ymax);
+    const double wideEstimate = MonteCarloEstimate(circles, totalPoints, xmin, xmax, ymin, ymax, seed);
+
+    std::cout << wideEstimate;
+  }
+
+  return 0;
+}
