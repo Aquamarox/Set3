@@ -1,8 +1,6 @@
 #include <iostream>
 #include <random>
-#include <cmath>
 #include <vector>
-#include <numbers>
 
 struct Circle {
   double x = 0;
@@ -77,13 +75,6 @@ void ComputeNarrowBox(const std::vector<Circle>& circles, double& xmin, double& 
   }
 }
 
-double ExactArea() {
-  constexpr double part1 = 0.25 * std::numbers::pi;
-  constexpr double part2 = 1.25 * std::asin(0.8);
-  constexpr double result = part1 + part2 - 1.0;
-  return result;
-}
-
 int main() {
   std::ios::sync_with_stdio(false);
   std::cin.tie(nullptr);
@@ -103,8 +94,6 @@ int main() {
 
   std::cout.setf(std::ios::fixed);
   std::cout.precision(10);
-
-  //std::cout << ExactArea() << '\n';
 
   if (narrow) {
     ComputeNarrowBox(circles, xmin, xmax, ymin, ymax);
